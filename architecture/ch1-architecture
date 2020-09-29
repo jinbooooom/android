@@ -2,7 +2,7 @@
 
 ## Android 五层架构
 
-<img src="./src/ch1/android_5layer.png" style="zoom:50%;" />
+<img src="src/ch1/android_5layer.png" style="zoom:50%;" />
 
 Android底层内核空间以Linux Kernel作为基石，上层用户空间由Native系统库、虚拟机运行环境、框架层组成，通过系统调用(Syscall)连通系统的内核空间与用户空间。对于用户空间主要采用C++和Java代码编写，通过JNI技术打通用户空间的Java层和Native层(C++/C)，从而连通整个系统。
 
@@ -15,7 +15,7 @@ Android底层内核空间以Linux Kernel作为基石，上层用户空间由Nati
 应用框架层为开发人员提供了开发应用程序所需要的 API，我们平常开发应用程序都是调用这一层所提供的 API，当然也包括系统应用。这一层是由 Java 代码编写的，可以称为 Java Framework。主要组件如下：
 
 | 名称                               | 功能描述                                                     |
-| --------------------------------- | ----------------------------------------------------------- |
+| :--------------------------------- | :----------------------------------------------------------- |
 | Activity Manager（活动管理器）     | 管理各个应用程序生命周期，以及常用的导航回退功能             |
 | Location Manager（位置管理器）     | 提供地理位置及定位功能服务                                   |
 | Package Manager（包管理器）        | 管理所有安装在Android系统中的应用程序                        |
@@ -58,7 +58,7 @@ Android 的核心系统服务基于 Linux 内核，在此基础上添加了部�
 
 ## 系统启动
 
-<img src="./src/ch1/android-boot.jpg" style="zoom:50%;" />
+![](src/ch1/android-boot.jpg)
 
 **图解：**Android系统启动过程由上图从下往上的一个过程是由Boot Loader引导开机，然后依次 -> Kernel -> Native -> Framework -> App，接来下简要说说每个过程：
  **关于Loader层：**
@@ -75,7 +75,7 @@ Android平台的基础是Linux内核，比如ART虚拟机最终调用底层Linux
 
 **2.2 硬件抽象层 (HAL)**
 
-Android的硬件驱动与Linux不同，传统的Liunx内核驱动完全存在于内核空间中。但是Android在内核外部增加了一个硬件抽象层(HAL-Hardware Abstraction Layer)，把一部分硬件驱动放到了HAL层。
+Android的硬件驱动与Linux不同，传统的Linux内核驱动完全存在于内核空间中。但是Android在内核外部增加了一个硬件抽象层(HAL-Hardware Abstraction Layer)，把一部分硬件驱动放到了HAL层。
 
 HAL提供标准接口，HAL包含多个库模块，其中每个模块都为特定类型的硬件组件实现一组接口，比如WIFI/Bluetooth模块，当框架API请求访问设备硬件时，Android系统将为该硬件加载相应的库模块。
 
@@ -89,7 +89,7 @@ Linux内核采用了GPL协议，如果硬件厂商需要支持Linux系统，就�
 
 这里的Native系统库主要包括init孵化来的用户空间的守护进程、HAL层以及开机动画等。启动init进程(pid=1),是Linux系统的用户进程， init进程是所有用户进程的鼻祖。
 
-- init进程会孵化出ueventd、logd、healthd、installd、adbd、lmkd等用户守护进程；
+- init进程会孵化出Native Daemons（ueventd、logd、healthd、installd、adbd、lmkd等用户守护进程）；
 - init进程还启动 serviceManager(binder服务管家)、 bootanim(开机动画)等重要服务;
 - init进程fork Media Server进程，Media Server进程负责启动和管理整个C++ framework，包含AudioFlinger，Camera Service等服务。
 - init进程孵化出Zygote进程，Zygote进程是Android系统的第一个Java进程(即虚拟机进程)， Zygote是所有Java进程的父进程，Zygote进程本身是由init进程孵化而来的。
@@ -100,9 +100,9 @@ Zygote进程，是由init进程通过解析init.rc文件后fork生成的，Zygot
 
 - 加载ZygoteInit类，注册Zygote Socket服务端套接字
 - 加载虚拟机
-- 提前加载类preloadClasses
-- 提前加载资源preloadResources
-- System Server进程，是由Zygote进程fork而来， SystemServer是Zygote孵化的第一个进程，System  Server负责启动和管理整个Java  framework，包含ActivityManager，WindowManager，PackageManager，PowerManager等服务。
+- 提前加载类 preloadClasses
+- 提前加载资源 preloadResources
+- `System Server`进程，是由`Zygote`进程`fork`而来， `SystemServer`是`Zygote`孵化的第一个进程，`System  Server`负责启动和管理整个Java  framework，包含ActivityManager，WindowManager，PackageManager，PowerManager等服务。
 
 **2.5 App层**
 
@@ -129,7 +129,7 @@ Binder作为Android系统提供的一种IPC机制，无论从系统开发还是�
 
 Binder通信采用c/s架构，从组件视角来说，包含Client、Server、ServiceManager以及binder驱动，其中ServiceManager用于管理系统中的各种服务。
 
-![](./src/ch1/IPC-Binder.jpg)
+![](src/ch1/IPC-Binder.jpg)
 
 **3.2 Socket**
 
@@ -149,11 +149,12 @@ Binder/Socket用于进程间通信，而Handler消息机制用于同进程的线
 
 有人可能会疑惑，为何Binder/Socket用于进程间通信，能否用于线程间通信呢？答案是肯定，对于两个具有独立地址空间的进程通信都可以，当然也能用于共享内存空间的两个线程间通信，这就好比杀鸡用牛刀。接着可能还有人会疑惑，那handler消息机制能否用于进程间通信？答案是不能，Handler只能用于共享内存地址空间的两个线程间通信，即同进程的两个线程间通信。很多时候，Handler是工作线程向UI主线程发送消息，即App应用中只有主线程能更新UI，其他工作线程往往是完成相应工作后，通过Handler告知主线程需要做出相应地UI更新操作，Handler分发相应的消息给UI主线程去完成，如下图：
 
-![](./src/ch1/handler_thread_commun.jpg)
+![](src/ch1/handler_thread_commun.jpg)
 
 由于工作线程与主线程共享地址空间，即Handler实例对象mHandler位于线程间共享的内存堆上，工作线程与主线程都能直接使用该对象，只需要注意多线程的同步问题。工作线程通过mHandler向其成员变量MessageQueue中添加新Message，主线程一直处于loop()方法内，当收到新的 Message 时按照一定规则分发给相应的handleMessage() 方法来处理。所以说，Handler消息机制用于同进程的线程间通信，其核心是线程间共享内存空间，而不同进程拥有不同的地址空间，也就不能用handler来实现进程间通信。
 
 上图只是Handler消息机制的一种处理流程，是不是只能工作线程向UI主线程发消息呢，其实不然，可以是UI线程向工作线程发送消息，也可以是多个工作线程之间通过handler发送消息。
+
  要理解framework层源码，掌握这3种基本的进程/线程间通信方式是非常有必要，当然Linux还有不少其他的IPC机制，比如共享内存、信号、信号量，在源码中也有体现，如果想全面彻底地掌握Android系统，还是需要对每一种IPC机制都有所了解。
 
 ## 参考文献
