@@ -1,7 +1,7 @@
 # my android
-app-tmp
-r
-t
+.class
+.so
+.dll
 
 # others
 **/t
@@ -10,6 +10,9 @@ media
 reading
 plan
 E
+app-tmp
+r
+t
 
 # Prerequisites
 *.d
