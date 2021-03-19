@@ -18,6 +18,7 @@ JNIEXPORT jstring JNICALL Java_com_study_jnilearn_HelloWorld_sayHello(
 	printf("[native]: call sayhello()\n");
 	const char *c_str = NULL;
 	char buff[128] = { 0 };
+	// Java 默认使用Unicode编码，而C/C++使用UTF编码
 	c_str = env->GetStringUTFChars(j_str, NULL);
 	if (c_str == NULL)
 	{
@@ -66,6 +67,28 @@ JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_addArray
 	}
 	return res;
 }
+
+/*
+ * Class:     com_study_jnilearn_HelloWorld
+ * Method:    getBooksValue
+ * Signature: (Lcom/study/jnilearn/Books;I)I
+ */
+JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_getBooksValue
+  (JNIEnv *env, jobject cls, jobject book, jint num)
+{
+    // 查找生成对象的类
+    jclass books = env->GetObjectClass(book);
+	// 注意 GetFieldID 的第一个参数是 jclass 类型
+	jfieldID priceID = env->GetFieldID(books, "mPrice", "I");
+	// 注意 GetIntField 里的第一个参数应是 jobject 而不是 jclass，即:
+	// 用 GetFieldId 从 jclass(books) 中获得成员变量的字段 ID，
+	// 再从 jobject(book) 中获得实例化的对象 book 中的成员变量值。
+	jint price = env->GetIntField(book, priceID);  
+	jint res = price * num;
+	printf("[native]: call getBooksValue(), total price = %d * %d = %d\n", price, num, res);
+	return res;
+}
+
 
 #ifdef __cplusplus
 }

@@ -31,6 +31,14 @@ JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_add
 JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_addArray
   (JNIEnv *, jobject, jintArray);
 
+/*
+ * Class:     com_study_jnilearn_HelloWorld
+ * Method:    getBooksValue
+ * Signature: (Lcom/study/jnilearn/Books;I)I
+ */
+JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_getBooksValue
+  (JNIEnv *, jobject, jobject, jint);
+
 #ifdef __cplusplus
 }
 #endif

@@ -28,36 +28,63 @@ public class HelloWorld {
 	public static native String sayHello(String name); 	// 声明，这是一个native静态函数，由本地代码实现
 	public static native int add(int x, int y);	// 静态求和函数
 	public native int addArray(int[] arr); // 非静态数组求和函数
+	public native int getBooksValue(Books books, int num);  // 类作为形参的测试
 
- 
 	public static void main(String[] args) {
+		// 在编译时通过命令 java -Djava.library.path=./jni，设置动态库目录为当前目录下的 jni 文件夹
 		System.out.println("JVM查找的动态库目录如下：");
 		String libraryDirs = System.getProperty("java.library.path");
 		System.out.println(libraryDirs);
+		System.out.println("\n");
 
 		// 调用本地函数
+		System.out.println("[Java:main]:测试静态方法与字符串");
 		String text = sayHello("Hello World");
 		System.out.println(text);
 
+		System.out.println("[Java:main]:测试静态方法与整型");
 		int res = add(1, 2);
-		System.out.println("[Java]:call add()\n" + res);
+		System.out.println("[Java:main]:call add()\n" + res);
 
-		// 测试非静态方法与类
+		System.out.println("[Java:main]:测试非静态方法数组作为形参");
 		HelloWorld hello = new HelloWorld();
 		int[] arr = {1, 2, 3, 4, 5};
 		res = hello.addArray(arr);
-		System.out.println("[Java]:call addArray()\n" + res);
+		System.out.println("[Java:main]:call addArray()\n" + res);
 
-
+		System.out.println("[Java:main]:测试非静态方法实类作为形参");
+		Books myBook = new Books(20);
+		int myNumber = 5;
+		int JavaTotalPrice = myBook.getTotalValue(myNumber);
+		System.out.println("[Java:main]:totalPrice = " + JavaTotalPrice);
+		int NativeTotalPrice = hello.getBooksValue(myBook, myNumber);
+		System.out.println("[Java:main]:after call native method:totalPrice = " + NativeTotalPrice);
 		System.out.println("\n");
 	}
 
 	static {
-		//System.loadLibrary("HelloWorld");	// 加载实现了native函数的动态库，只需要写动态库的名字
-		System.load("/home/user/gitme/android/JNI/JavaCallNativeCplus/jni/libHelloWorld.so");
+		System.loadLibrary("HelloWorld");	// 加载实现了native函数的动态库，只需要写动态库的名字
+		//System.load("/home/user/gitme/android/JNI/JavaCallNativeCplus/jni/libHelloWorld.so");
 	}
 }
 
+class Books
+{
+	public int mPrice = 10;
+
+	public Books(int price)
+	{
+		System.out.println("[Java:Books]: Books的构造函数中 mPrice = " + price);
+		this.mPrice = price;
+	}
+
+	public int getTotalValue(int number)
+	{
+		int res = number * this.mPrice;
+		System.out.println("[Java:Books:getTotalValue]: " + res);
+		return res;
+	}
+}
 ```
 
 ### 第二步、用javac命令将.java源文件编译成.class字节码文件
@@ -130,6 +157,14 @@ JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_add
 JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_addArray
   (JNIEnv *, jobject, jintArray);
 
+/*
+ * Class:     com_study_jnilearn_HelloWorld
+ * Method:    getBooksValue
+ * Signature: (Lcom/study/jnilearn/Books;I)I
+ */
+JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_getBooksValue
+  (JNIEnv *, jobject, jobject, jint);
+
 #ifdef __cplusplus
 }
 #endif
@@ -160,6 +195,7 @@ JNIEXPORT jstring JNICALL Java_com_study_jnilearn_HelloWorld_sayHello(
 	printf("[native]: call sayhello()\n");
 	const char *c_str = NULL;
 	char buff[128] = { 0 };
+	// Java 默认使用Unicode编码，而C/C++使用UTF编码
 	c_str = env->GetStringUTFChars(j_str, NULL);
 	if (c_str == NULL)
 	{
@@ -208,6 +244,28 @@ JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_addArray
 	}
 	return res;
 }
+
+/*
+ * Class:     com_study_jnilearn_HelloWorld
+ * Method:    getBooksValue
+ * Signature: (Lcom/study/jnilearn/Books;I)I
+ */
+JNIEXPORT jint JNICALL Java_com_study_jnilearn_HelloWorld_getBooksValue
+  (JNIEnv *env, jobject cls, jobject book, jint num)
+{
+    // 查找生成对象的类
+    jclass books = env->GetObjectClass(book);
+	// 注意 GetFieldID 的第一个参数是 jclass 类型
+	jfieldID priceID = env->GetFieldID(books, "mPrice", "I");
+	// 注意 GetIntField 里的第一个参数应是 jobject 而不是 jclass，即:
+	// 用 GetFieldId 从 jclass(books) 中获得成员变量的字段 ID，
+	// 再从 jobject(book) 中获得实例化的对象 book 中的成员变量值。
+	jint price = env->GetIntField(book, priceID);  
+	jint res = price * num;
+	printf("[native]: call getBooksValue(), total price = %d * %d = %d\n", price, num, res);
+	return res;
+}
+
 
 #ifdef __cplusplus
 }
@@ -292,11 +350,55 @@ Linux/Unix环境下可以通过设置LD_LIBRARY_PATH环境变量，指定库的�
 费了那么大劲，终于可以运行写好的Java程序了，结果如下：
 
 ```shell
-java -classpath ./bin com.study.jnilearn.HelloWorld
-[native]:Java Call Native Function Test!
+java -Djava.library.path=./jni -classpath ./bin com.study.jnilearn.HelloWorld 
 
-/usr/java/packages/lib/amd64:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib
+JVM查找的动态库目录如下：
+./jni
+
+
+[Java:main]:测试静态方法与字符串
+[native]: call sayhello()
+[native]:Hello World
+
+[Java:main]:测试静态方法与整型
+[native]: call add()
+[Java:main]:call add()
+3
+[Java:main]:测试非静态方法数组作为形参
+[native]: call addArray()
+[native] size = 5
+[Java:main]:call addArray()
+15
+[Java:main]:测试非静态方法实类作为形参
+[Java:Books]: Books的构造函数中 mPrice = 20
+[Java:Books:getTotalValue]: 100
+[Java:main]:totalPrice = 100
+[native]: call getBooksValue(), total price = 20 * 5 = 100
+[Java:main]:after call native method:totalPrice = 100
 ```
 
-## 理论
+# C/C++调用Java
+
+![](assets/JNI/2021-03-09 09-16-17 的屏幕截图.png)
+
+代码见当前目录下的`NativeCallJava`文件夹
+
+### 字符串处理
+
+```c++
+GetStringUTFChars(env, j_str, &isCopy) // for c
+GetStringUTFChars(j_str, &isCopy) // for c++
+```
+
+- env：JNIEnv函数表指针
+- j_str：jstring类型（Java传递给本地代码的字符串指针）
+- isCopy：取值JNI_TRUE和JNI_FALSE，如果值为JNI_TRUE，表示返回JVM内部源字符串的一份拷贝，并为新产生的字符串分配内存空间。如果值为JNI_FALSE，表示返回JVM内部源字符串的指针，意味着可以通过指针修改源字符串的内容，不推荐这么做，因为这样做就打破了Java字符串不能修改的规定。但我们在开发当中，并不关心这个值是多少，**通常情况下这个参数填NULL即可。**
+
+因为Java默认使用Unicode编码，而C/C++默认使用UTF编码，所以在本地代码中操作字符串的时候，必须使用合适的JNI函数把jstring转换成C风格的字符串。
+
+
+
+## 参考
+
+- [JNI/NDK开发指南](https://blog.csdn.net/xyang81/article/details/41759643)
 
